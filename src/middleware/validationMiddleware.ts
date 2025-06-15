@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { ObjectSchema } from 'yup';
+import { ZodSchema } from 'zod';
 
-export const validate = (schema: ObjectSchema<any>) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const validate = (schema: ZodSchema) => {
+  return async (req: Request, res: Response , next: NextFunction) => {
     try {
-      await schema.validate(req.body, { abortEarly: false });
+      await schema.parse(req.body);
       next();
     } catch (error: any) {
       if (error.inner) {
