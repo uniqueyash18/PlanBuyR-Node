@@ -1,18 +1,21 @@
 import { Request, Response } from 'express';
 import { Plan } from '../models/Plan';
 import { Post } from '../models/Post';
+import { planSchema } from '../validations/validationSchemas';
+import { sendErrorResponse, sendSuccessResponse } from '../utils/Responses';
 
 // Create new plan
 export const createPlan = async (req: Request, res: Response) => {
   try {
-    const { postId, duration, price, features } = req.body;
+    const validatedData = planSchema.parse(req.body);
+    const { postId, duration, price, features } = validatedData;
 
     // Check if post exists
     const post = await Post.findById(postId);
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: 'Post not found'
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
       });
     }
 
@@ -23,15 +26,17 @@ export const createPlan = async (req: Request, res: Response) => {
       features
     });
 
-    res.status(201).json({
-      success: true,
-      data: plan
+    sendSuccessResponse({
+      message: 'Plan created successfully',
+      data: plan,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create plan error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating plan'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error creating plan',
+      error,
+      res
     });
   }
 };
@@ -50,16 +55,17 @@ export const getAllPlans = async (req: Request, res: Response) => {
       })
       .sort({ price: 1 });
 
-    res.json({
-      success: true,
-      count: plans.length,
-      data: plans
+    sendSuccessResponse({
+      message: 'Plans fetched successfully',
+      data: plans,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get plans error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching plans'
+    sendErrorResponse({
+      message: 'Error fetching plans',
+      error,
+      res
     });
   }
 };
@@ -79,22 +85,23 @@ export const getPlansByPost = async (req: Request, res: Response) => {
       .sort({ price: 1 });
 
     if (plans.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No plans found for this post'
+      return sendErrorResponse({
+        message: 'No plans found for this post',
+        res
       });
     }
 
-    res.json({
-      success: true,
-      count: plans.length,
-      data: plans
+    sendSuccessResponse({
+      message: 'Plans fetched successfully',
+      data: plans,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get plans by post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching plans'
+    sendErrorResponse({
+      message: 'Error fetching plans',
+      error,
+      res
     });
   }
 };
@@ -113,21 +120,23 @@ export const getPlanById = async (req: Request, res: Response) => {
       });
 
     if (!plan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Plan not found'
+      return sendErrorResponse({
+        message: 'Plan not found',
+        res
       });
     }
 
-    res.json({
-      success: true,
-      data: plan
+    sendSuccessResponse({
+      message: 'Plan fetched successfully',
+      data: plan,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get plan error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching plan'
+    sendErrorResponse({
+      message: 'Error fetching plan',
+      error,
+      res
     });
   }
 };
@@ -135,17 +144,16 @@ export const getPlanById = async (req: Request, res: Response) => {
 // Update plan
 export const updatePlan = async (req: Request, res: Response) => {
   try {
-    const { postId, duration, price, features } = req.body;
+    const validatedData = planSchema.parse(req.body);
+    const { postId, duration, price, features } = validatedData;
 
-    // Check if post exists if postId is provided
-    if (postId) {
-      const post = await Post.findById(postId);
-      if (!post) {
-        return res.status(404).json({
-          success: false,
-          message: 'Post not found'
-        });
-      }
+    // Check if post exists
+    const post = await Post.findById(postId);
+    if (!post) {
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
+      });
     }
 
     const plan = await Plan.findByIdAndUpdate(
@@ -162,21 +170,23 @@ export const updatePlan = async (req: Request, res: Response) => {
     });
 
     if (!plan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Plan not found'
+      return sendErrorResponse({
+        message: 'Plan not found',
+        res
       });
     }
 
-    res.json({
-      success: true,
-      data: plan
+    sendSuccessResponse({
+      message: 'Plan updated successfully',
+      data: plan,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update plan error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating plan'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error updating plan',
+      error,
+      res
     });
   }
 };
@@ -187,21 +197,23 @@ export const deletePlan = async (req: Request, res: Response) => {
     const plan = await Plan.findByIdAndDelete(req.params.id);
 
     if (!plan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Plan not found'
+      return sendErrorResponse({
+        message: 'Plan not found',
+        res
       });
     }
 
-    res.json({
-      success: true,
-      data: {}
+    sendSuccessResponse({
+      message: 'Plan deleted successfully',
+      data: {},
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete plan error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting plan'
+    sendErrorResponse({
+      message: 'Error deleting plan',
+      error,
+      res
     });
   }
 }; 

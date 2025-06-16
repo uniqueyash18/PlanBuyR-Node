@@ -5,6 +5,7 @@ import slugify from 'slugify';
 export interface ICategory extends Document {
   name: string;
   description?: string;
+  imageUrl?: string;
   slug: string;
   createdAt: Date;
   updatedAt: Date;
@@ -14,6 +15,7 @@ export interface ICategory extends Document {
 export interface ICategoryInput {
   name: string;
   description?: string;
+  imageUrl?: string;
 }
 
 // Category Schema
@@ -24,13 +26,15 @@ const categorySchema = new Schema<ICategory>(
       required: [true, 'Category name is required'],
       unique: true,
       trim: true,
-      minlength: [2, 'Category name must be at least 2 characters long'],
-      maxlength: [50, 'Category name cannot exceed 50 characters'],
     },
     description: {
       type: String,
       trim: true,
-      maxlength: [500, 'Description cannot exceed 500 characters'],
+    },
+    imageUrl: {
+      type: String,
+      trim: true,
+      required: false
     },
     slug: {
       type: String,

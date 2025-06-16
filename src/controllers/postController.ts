@@ -1,20 +1,23 @@
 import { Request, Response } from 'express';
 import { Post } from '../models/Post';
 import { Category } from '../models/Category';
+import { postSchema } from '../validations/validationSchemas';
+import { sendErrorResponse, sendSuccessResponse } from '../utils/Responses';
 import fs from 'fs';
 import path from 'path';
 
 // Create new post
 export const createPost = async (req: Request, res: Response) => {
   try {
-    const { name, description, categoryId } = req.body;
+    const validatedData = postSchema.parse(req.body);
+    const { name, description, categoryId } = validatedData;
     
     // Check if category exists
     const category = await Category.findById(categoryId);
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
+      return sendErrorResponse({
+        message: 'Category not found',
+        res
       });
     }
 
@@ -28,19 +31,21 @@ export const createPost = async (req: Request, res: Response) => {
       logoUrl
     });
 
-    res.status(201).json({
-      success: true,
-      data: post
+    sendSuccessResponse({
+      message: 'Post created successfully',
+      data: post,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     // If there's an error and a file was uploaded, delete it
     if (req.file) {
       fs.unlinkSync(req.file.path);
     }
     console.error('Create post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating post'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error creating post',
+      error,
+      res
     });
   }
 };
@@ -52,16 +57,17 @@ export const getAllPosts = async (req: Request, res: Response) => {
       .populate('categoryId', 'name')
       .sort({ createdAt: -1 });
 
-    res.json({
-      success: true,
-      count: posts.length,
-      data: posts
+    sendSuccessResponse({
+      message: 'Posts fetched successfully',
+      data: posts,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get posts error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching posts'
+    sendErrorResponse({
+      message: 'Error fetching posts',
+      error,
+      res
     });
   }
 };
@@ -73,21 +79,23 @@ export const getPostById = async (req: Request, res: Response) => {
       .populate('categoryId', 'name');
 
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: 'Post not found'
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
       });
     }
 
-    res.json({
-      success: true,
-      data: post
+    sendSuccessResponse({
+      message: 'Post fetched successfully',
+      data: post,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching post'
+    sendErrorResponse({
+      message: 'Error fetching post',
+      error,
+      res
     });
   }
 };
@@ -95,25 +103,24 @@ export const getPostById = async (req: Request, res: Response) => {
 // Update post
 export const updatePost = async (req: Request, res: Response) => {
   try {
-    const { name, description, categoryId } = req.body;
+    const validatedData = postSchema.parse(req.body);
+    const { name, description, categoryId } = validatedData;
 
-    // Check if category exists if categoryId is provided
-    if (categoryId) {
-      const category = await Category.findById(categoryId);
-      if (!category) {
-        return res.status(404).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
+    // Check if category exists
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return sendErrorResponse({
+        message: 'Category not found',
+        res
+      });
     }
 
     // Get existing post
     const existingPost = await Post.findById(req.params.id);
     if (!existingPost) {
-      return res.status(404).json({
-        success: false,
-        message: 'Post not found'
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
       });
     }
 
@@ -141,19 +148,21 @@ export const updatePost = async (req: Request, res: Response) => {
       { new: true, runValidators: true }
     ).populate('categoryId', 'name');
 
-    res.json({
-      success: true,
-      data: post
+    sendSuccessResponse({
+      message: 'Post updated successfully',
+      data: post,
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     // If there's an error and a new file was uploaded, delete it
     if (req.file) {
       fs.unlinkSync(req.file.path);
     }
     console.error('Update post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating post'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error updating post',
+      error,
+      res
     });
   }
 };
@@ -164,9 +173,9 @@ export const deletePost = async (req: Request, res: Response) => {
     const post = await Post.findById(req.params.id);
 
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: 'Post not found'
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
       });
     }
 
@@ -180,15 +189,17 @@ export const deletePost = async (req: Request, res: Response) => {
 
     await post.deleteOne();
 
-    res.json({
-      success: true,
-      data: {}
+    sendSuccessResponse({
+      message: 'Post deleted successfully',
+      data: {},
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting post'
+    sendErrorResponse({
+      message: 'Error deleting post',
+      error,
+      res
     });
   }
 }; 

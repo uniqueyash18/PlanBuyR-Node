@@ -3,12 +3,14 @@ import { Banner } from '../models/Banner';
 import { Category } from '../models/Category';
 import { Post } from '../models/Post';
 import { Plan } from '../models/Plan';
+import { paginationSchema } from '../validations/validationSchemas';
+import { sendErrorResponse, sendSuccessResponse } from '../utils/Responses';
 
 // Get all banners
 export const getBanners = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
+
     const skip = (page - 1) * limit;
 
     const [banners, total] = await Promise.all([
@@ -20,19 +22,25 @@ export const getBanners = async (req: Request, res: Response) => {
       Banner.countDocuments()
     ]);
 
-    res.json({
-      success: true,
-      count: banners.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: banners
+    sendSuccessResponse({
+      message: 'Banners fetched successfully',
+      data: {
+        banners,
+        pagination: {
+          total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          limit
+        }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get banners error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching banners'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching banners',
+      error,
+      res
     });
   }
 };
@@ -40,8 +48,8 @@ export const getBanners = async (req: Request, res: Response) => {
 // Get all categories
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
+
     const skip = (page - 1) * limit;
 
     const [categories, total] = await Promise.all([
@@ -52,19 +60,25 @@ export const getCategories = async (req: Request, res: Response) => {
       Category.countDocuments()
     ]);
 
-    res.json({
-      success: true,
-      count: categories.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: categories
+    sendSuccessResponse({
+      message: 'Categories fetched successfully',
+      data: {
+        categories,
+        pagination: {
+          total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          limit
+        }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get categories error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching categories'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching categories',
+      error,
+      res
     });
   }
 };
@@ -72,8 +86,8 @@ export const getCategories = async (req: Request, res: Response) => {
 // Get all posts
 export const getPosts = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
+
     const skip = (page - 1) * limit;
 
     const [posts, total] = await Promise.all([
@@ -85,19 +99,25 @@ export const getPosts = async (req: Request, res: Response) => {
       Post.countDocuments()
     ]);
 
-    res.json({
-      success: true,
-      count: posts.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: posts
+    sendSuccessResponse({
+      message: 'Posts fetched successfully',
+      data: {
+        posts,
+        pagination: {
+          total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          limit
+        }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get posts error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching posts'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching posts',
+      error,
+      res
     });
   }
 };
@@ -109,9 +129,9 @@ export const getPostById = async (req: Request, res: Response) => {
       .populate('categoryId', 'name');
 
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: 'Post not found'
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
       });
     }
 
@@ -119,18 +139,20 @@ export const getPostById = async (req: Request, res: Response) => {
     const plans = await Plan.find({ postId: post._id })
       .sort({ price: 1 });
 
-    res.json({
-      success: true,
+    sendSuccessResponse({
+      message: 'Post fetched successfully',
       data: {
         ...post.toObject(),
         plans
-      }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching post'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching post',
+      error,
+      res
     });
   }
 };
@@ -138,16 +160,16 @@ export const getPostById = async (req: Request, res: Response) => {
 // Get posts by category
 export const getPostsByCategory = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
+
     const skip = (page - 1) * limit;
 
     // Check if category exists
     const category = await Category.findById(req.params.categoryId);
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
+      return sendErrorResponse({
+        message: 'Category not found',
+        res
       });
     }
 
@@ -160,19 +182,25 @@ export const getPostsByCategory = async (req: Request, res: Response) => {
       Post.countDocuments({ categoryId: req.params.categoryId })
     ]);
 
-    res.json({
-      success: true,
-      count: posts.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: posts
+    sendSuccessResponse({
+      message: 'Posts fetched successfully',
+      data: {
+        posts,
+        pagination: {
+          total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          limit
+        }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get posts by category error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching posts'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching posts',
+      error,
+      res
     });
   }
 };
@@ -180,16 +208,16 @@ export const getPostsByCategory = async (req: Request, res: Response) => {
 // Get plans by post
 export const getPlansByPost = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
+
     const skip = (page - 1) * limit;
 
     // Check if post exists
     const post = await Post.findById(req.params.postId);
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: 'Post not found'
+      return sendErrorResponse({
+        message: 'Post not found',
+        res
       });
     }
 
@@ -201,19 +229,25 @@ export const getPlansByPost = async (req: Request, res: Response) => {
       Plan.countDocuments({ postId: req.params.postId })
     ]);
 
-    res.json({
-      success: true,
-      count: plans.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: plans
+    sendSuccessResponse({
+      message: 'Plans fetched successfully',
+      data: {
+        plans,
+        pagination: {
+          total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          limit
+        }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get plans by post error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching plans'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching plans',
+      error,
+      res
     });
   }
 };
@@ -221,8 +255,8 @@ export const getPlansByPost = async (req: Request, res: Response) => {
 // Get homepage data
 export const getHomePageData = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
+
     const skip = (page - 1) * limit;
 
     // Fetch banners, categories, and latest plans in parallel
@@ -247,8 +281,8 @@ export const getHomePageData = async (req: Request, res: Response) => {
       Plan.countDocuments()
     ]);
 
-    res.json({
-      success: true,
+    sendSuccessResponse({
+      message: 'Homepage data fetched successfully',
       data: {
         banners: {
           count: banners.length,
@@ -259,19 +293,23 @@ export const getHomePageData = async (req: Request, res: Response) => {
           data: categories
         },
         latestPlans: {
-          count: latestPlans.length,
-          total: totalPlans,
-          totalPages: Math.ceil(totalPlans / limit),
-          currentPage: page,
-          data: latestPlans
+          data: latestPlans,
+          pagination: {
+            total: totalPlans,
+            totalPages: Math.ceil(totalPlans / limit),
+            currentPage: page,
+            limit
+          }
         }
-      }
+      },
+      res
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get homepage data error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching homepage data'
+    sendErrorResponse({
+      message: error?.errors?.[0]?.message || 'Error fetching homepage data',
+      error,
+      res
     });
   }
 }; 
