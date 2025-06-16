@@ -222,7 +222,7 @@ export const getPlansByPost = async (req: Request, res: Response) => {
     }
 
     const [plans, total] = await Promise.all([
-      Plan.find({ postId: req.params.postId })
+      Plan.find({ postId: req.params.postId }).populate('postId')
         .sort({ price: 1 })
         .skip(skip)
         .limit(limit),

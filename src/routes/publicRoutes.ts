@@ -19,7 +19,7 @@ router.get('/banners', getBanners as RequestHandler);
 
 // Category routes
 router.get('/categories', getCategories as RequestHandler);
-router.get('/categories/:categoryId/posts', getPostsByCategory as RequestHandler);
+router.get('/postsbycategory/:categoryId', getPostsByCategory as RequestHandler);
 
 // Post routes
 router.get('/posts', getPosts as RequestHandler);
