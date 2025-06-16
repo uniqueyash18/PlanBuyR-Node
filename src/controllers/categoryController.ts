@@ -1,17 +1,30 @@
 import { Request, Response } from 'express';
 import { Category } from '../models/Category';
-import { categorySchema } from '../validations/validationSchemas';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/Responses';
-import { uploadSingle } from '../middleware/uploadMiddleware';
+import { categorySchema } from '../validations/validationSchemas';
+import { uploadToR2 } from '../utils/cloudFlareR2';
+
+interface CategoryRequest extends Request {
+    file?: Express.Multer.File;
+}
 
 // Create new category
-export const createCategory = async (req: Request, res: Response) => {
+export const createCategory = async (req: CategoryRequest, res: Response) => {
   try {
     const validatedData = categorySchema.parse(req.body);
     const { name, description } = validatedData;
 
-    // Get the uploaded file path if it exists
-    const imageUrl = req.file ? `uploads/${req.file.filename}` : null;
+    let imageUrl = null;
+    if (req.file) {
+      const key = `categories/${Date.now()}-${req.file.originalname}`;
+      const uploadResult = await uploadToR2(req.file, key);
+      
+      if (uploadResult.success) {
+        imageUrl = uploadResult.url;
+      } else {
+        throw new Error('Failed to upload image');
+      }
+    }
 
     const category = await Category.create({
       name,
@@ -82,17 +95,22 @@ export const getCategoryById = async (req: Request, res: Response) => {
 };
 
 // Update category
-export const updateCategory = async (req: Request, res: Response) => {
+export const updateCategory = async (req: CategoryRequest, res: Response) => {
   try {
     const validatedData = categorySchema.parse(req.body);
     const { name, description } = validatedData;
 
-    // Get the uploaded file path if it exists
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
-
     const updateData: any = { name, description };
-    if (imageUrl) {
-      updateData.imageUrl = imageUrl;
+    
+    if (req.file) {
+      const key = `categories/${Date.now()}-${req.file.originalname}`;
+      const uploadResult = await uploadToR2(req.file, key);
+      
+      if (uploadResult.success) {
+        updateData.imageUrl = uploadResult.url;
+      } else {
+        throw new Error('Failed to upload image');
+      }
     }
 
     const category = await Category.findByIdAndUpdate(

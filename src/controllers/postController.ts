@@ -3,11 +3,14 @@ import { Post } from '../models/Post';
 import { Category } from '../models/Category';
 import { postSchema } from '../validations/validationSchemas';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/Responses';
-import fs from 'fs';
-import path from 'path';
+import { uploadToR2 } from '../utils/cloudFlareR2';
+
+interface PostRequest extends Request {
+    file?: Express.Multer.File;
+}
 
 // Create new post
-export const createPost = async (req: Request, res: Response) => {
+export const createPost = async (req: PostRequest, res: Response) => {
   try {
     const validatedData = postSchema.parse(req.body);
     const { name, description, categoryId } = validatedData;
@@ -21,8 +24,17 @@ export const createPost = async (req: Request, res: Response) => {
       });
     }
 
-    // Get logo URL from uploaded file
-    const logoUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    let logoUrl = undefined;
+    if (req.file) {
+      const key = `posts/${Date.now()}-${req.file.originalname}`;
+      const uploadResult = await uploadToR2(req.file, key);
+      
+      if (uploadResult.success) {
+        logoUrl = uploadResult.url;
+      } else {
+        throw new Error('Failed to upload logo');
+      }
+    }
 
     const post = await Post.create({
       name,
@@ -37,10 +49,6 @@ export const createPost = async (req: Request, res: Response) => {
       res
     });
   } catch (error: any) {
-    // If there's an error and a file was uploaded, delete it
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
     console.error('Create post error:', error);
     sendErrorResponse({
       message: error?.errors?.[0]?.message || 'Error creating post',
@@ -101,7 +109,7 @@ export const getPostById = async (req: Request, res: Response) => {
 };
 
 // Update post
-export const updatePost = async (req: Request, res: Response) => {
+export const updatePost = async (req: PostRequest, res: Response) => {
   try {
     const validatedData = postSchema.parse(req.body);
     const { name, description, categoryId } = validatedData;
@@ -124,27 +132,27 @@ export const updatePost = async (req: Request, res: Response) => {
       });
     }
 
+    const updateData: any = { 
+      name, 
+      description, 
+      categoryId
+    };
+
     // Handle logo update if new file is uploaded
-    let logoUrl = existingPost.logoUrl;
     if (req.file) {
-      // Delete old logo file if it exists
-      if (existingPost.logoUrl) {
-        const oldLogoPath = path.join(process.cwd(), existingPost.logoUrl);
-        if (fs.existsSync(oldLogoPath)) {
-          fs.unlinkSync(oldLogoPath);
-        }
+      const key = `posts/${Date.now()}-${req.file.originalname}`;
+      const uploadResult = await uploadToR2(req.file, key);
+      
+      if (uploadResult.success) {
+        updateData.logoUrl = uploadResult.url;
+      } else {
+        throw new Error('Failed to upload logo');
       }
-      logoUrl = `/uploads/${req.file.filename}`;
     }
 
     const post = await Post.findByIdAndUpdate(
       req.params.id,
-      { 
-        name, 
-        description, 
-        categoryId,
-        logoUrl
-      },
+      updateData,
       { new: true, runValidators: true }
     ).populate('categoryId', 'name');
 
@@ -154,10 +162,6 @@ export const updatePost = async (req: Request, res: Response) => {
       res
     });
   } catch (error: any) {
-    // If there's an error and a new file was uploaded, delete it
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
     console.error('Update post error:', error);
     sendErrorResponse({
       message: error?.errors?.[0]?.message || 'Error updating post',
@@ -177,14 +181,6 @@ export const deletePost = async (req: Request, res: Response) => {
         message: 'Post not found',
         res
       });
-    }
-
-    // Delete logo file if it exists
-    if (post.logoUrl) {
-      const logoPath = path.join(process.cwd(), post.logoUrl);
-      if (fs.existsSync(logoPath)) {
-        fs.unlinkSync(logoPath);
-      }
     }
 
     await post.deleteOne();

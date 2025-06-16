@@ -25,7 +25,7 @@ router.route('/post/:postId')
 
 router.route('/:id')
   .get(getPlanById as express.RequestHandler)
-  .put(updatePlan as express.RequestHandler)
+  .post(updatePlan as express.RequestHandler)
   .delete(deletePlan as express.RequestHandler);
 
 export default router; 

@@ -1,16 +1,16 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
-import morgan from 'morgan';
+import dotenv from 'dotenv';
+import express, { Express, NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import mongoose from 'mongoose';
-import authRoutes from './src/routes/authRoutes';
-import { uploadMultiple, uploadSingle } from './src/middleware/uploadMiddleware';
-import categoryRoutes from './src/routes/categoryRoutes';
-import postRoutes from './src/routes/postRoutes';
-import planRoutes from './src/routes/planRoutes';
-import publicRoutes from './src/routes/publicRoutes';
+import morgan from 'morgan';
 import adminRoutes from './src/routes/adminRoutes';
+import authRoutes from './src/routes/authRoutes';
+import categoryRoutes from './src/routes/categoryRoutes';
+import planRoutes from './src/routes/planRoutes';
+import postRoutes from './src/routes/postRoutes';
+import publicRoutes from './src/routes/publicRoutes';
+import bannerRoutes from './src/routes/bannerRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -60,22 +60,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
-
-app.post('/upload', uploadSingle('image'), (req, res) => {
-  // Access uploaded file via req.file
-  res.json({ 
-    success: true, 
-    file: req.file 
-  });
-});
-
-app.post('/upload-multiple', uploadMultiple('images', 3), (req, res) => {
-  // Access uploaded files via req.files
-  res.json({ 
-    success: true, 
-    files: req.files 
-  });
-});
+app.use('/api/banners', bannerRoutes);
 
 // Start server
 const startServer = async () => {

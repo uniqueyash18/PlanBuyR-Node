@@ -21,8 +21,8 @@ export const categorySchema = z.object({
 // Plan Validation Schemas
 export const planSchema = z.object({
   postId: z.string().min(24, 'Invalid post ID'),
-  duration: z.number().positive('Duration must be positive'),
-  price: z.number().positive('Price must be positive'),
+  duration: z.string().min(1, 'Duration is required'),
+  price: z.string().min(1, 'Price is required'),
   features: z.array(z.string()).min(1, 'At least one feature is required')
 });
 

@@ -22,7 +22,7 @@ router.route('/')
 
 router.route('/:id')
   .get(getPostById as express.RequestHandler)
-  .put(uploadSingle('logo') as express.RequestHandler, updatePost as express.RequestHandler)
+  .post(uploadSingle('logo') as express.RequestHandler, updatePost as express.RequestHandler)
   .delete(deletePost as express.RequestHandler);
 
 export default router; 
