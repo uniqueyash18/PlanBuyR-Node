@@ -31,13 +31,6 @@ const planSchema = new Schema<IPlan>(
       type: String,
       required: [true, 'Duration is required'],
       trim: true,
-      validate: {
-        validator: function(v: string) {
-          // Validate duration format (e.g., "1 Month", "3 Months", "1 Year")
-          return /^\d+\s+(Month|Months|Year|Years)$/.test(v);
-        },
-        message: 'Duration must be in format: "1 Month", "3 Months", "1 Year", etc.'
-      }
     },
     price: {
       type: Number,
