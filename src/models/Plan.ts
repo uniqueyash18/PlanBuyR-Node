@@ -6,6 +6,7 @@ export interface IPlan extends Document {
   postId: IPost['_id'];
   duration: string;
   price: number;
+  comparePrice: number;
   features?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -16,6 +17,7 @@ export interface IPlanInput {
   postId: mongoose.Types.ObjectId;
   duration: string;
   price: number;
+  comparePrice: number;
   features?: string[];
 }
 
@@ -42,6 +44,17 @@ const planSchema = new Schema<IPlan>(
           return /^\d+(\.\d{1,2})?$/.test(v.toString());
         },
         message: 'Price must have at most 2 decimal places'
+      }
+    },
+    comparePrice: {
+      type: Number,
+      min: [0, 'Compare price cannot be negative'],
+      validate: {
+        validator: function(v: number) {
+          // Ensure price has at most 2 decimal places
+          return /^\d+(\.\d{1,2})?$/.test(v.toString());
+        },
+        message: 'Compare price must have at most 2 decimal places'
       }
     },
     features: [{

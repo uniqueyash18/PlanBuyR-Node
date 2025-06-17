@@ -8,7 +8,7 @@ import { sendErrorResponse, sendSuccessResponse } from '../utils/Responses';
 export const createPlan = async (req: Request, res: Response) => {
   try {
     const validatedData = planSchema.parse(req.body);
-    const { postId, duration, price, features } = validatedData;
+    const { postId, duration, price, comparePrice, features } = validatedData;
 
     // Check if post exists
     const post = await Post.findById(postId);
@@ -23,6 +23,7 @@ export const createPlan = async (req: Request, res: Response) => {
       postId,
       duration,
       price,
+      comparePrice,
       features
     });
 
@@ -47,7 +48,7 @@ export const getAllPlans = async (req: Request, res: Response) => {
     const plans = await Plan.find()
       .populate({
         path: 'postId',
-        select: 'name description logoUrl',
+        select: 'name description logoUrl comparePrice',
         populate: {
           path: 'categoryId',
           select: 'name'
@@ -76,7 +77,7 @@ export const getPlansByPost = async (req: Request, res: Response) => {
     const plans = await Plan.find({ postId: req.params.postId })
       .populate({
         path: 'postId',
-        select: 'name description logoUrl',
+        select: 'name description logoUrl comparePrice',
         populate: {
           path: 'categoryId',
           select: 'name'
@@ -112,7 +113,7 @@ export const getPlanById = async (req: Request, res: Response) => {
     const plan = await Plan.findById(req.params.id)
       .populate({
         path: 'postId',
-        select: 'name description logoUrl',
+        select: 'name description logoUrl comparePrice',
         populate: {
           path: 'categoryId',
           select: 'name'
@@ -145,7 +146,7 @@ export const getPlanById = async (req: Request, res: Response) => {
 export const updatePlan = async (req: Request, res: Response) => {
   try {
     const validatedData = planSchema.parse(req.body);
-    const { postId, duration, price, features } = validatedData;
+    const { postId, duration, price, comparePrice, features } = validatedData;
 
     // Check if post exists
     const post = await Post.findById(postId);
@@ -158,11 +159,11 @@ export const updatePlan = async (req: Request, res: Response) => {
 
     const plan = await Plan.findByIdAndUpdate(
       req.params.id,
-      { postId, duration, price, features },
+      { postId, duration, price, comparePrice, features },
       { new: true, runValidators: true }
     ).populate({
       path: 'postId',
-      select: 'name description logoUrl',
+      select: 'name description logoUrl comparePrice',
       populate: {
         path: 'categoryId',
         select: 'name'
